@@ -213,6 +213,17 @@ export default function Home() {
         );
         const impactA = players[0].weight + players[0].cornering * 0.4;
         const impactB = players[1].weight + players[1].cornering * 0.4;
+        const heavyIndex = impactA >= impactB ? 0 : 1;
+        const lightIndex = heavyIndex === 0 ? 1 : 0;
+        const lightDiff = next[lightIndex].dist - next[heavyIndex].dist;
+        const pushAmount = CONTACT_EPS - Math.abs(lightDiff);
+        if (pushAmount > 0) {
+          const direction = Math.sign(lightDiff) || 1;
+          next[lightIndex].dist = Math.max(
+            0,
+            next[lightIndex].dist + direction * pushAmount
+          );
+        }
         const penalty = 0.7 - curveBias * 0.1;
         if (impactA >= impactB) {
           next[1].vel *= penalty + players[1].cornering * 0.0015;
