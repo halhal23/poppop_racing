@@ -23,6 +23,7 @@ type SimState = {
   players: SimPlayer[];
   contactCooldown: number;
   lastUiUpdate: number;
+  elapsed: number;
 };
 
 type Snapshot = {
@@ -32,6 +33,7 @@ type Snapshot = {
     staminaLeft: number;
     lap: number;
   }[];
+  time: number;
 };
 
 const TRACK_LENGTH = 400;
@@ -88,6 +90,7 @@ export default function Home() {
       { dist: 0, vel: 0, staminaLeft: players[0].stamina, lap: 0 },
       { dist: 0, vel: 0, staminaLeft: players[1].stamina, lap: 0 },
     ],
+    time: 0,
   });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -139,6 +142,7 @@ export default function Home() {
       players: players.map(createSimPlayer),
       contactCooldown: 0,
       lastUiUpdate: performance.now(),
+      elapsed: 0,
     };
     setSnapshot({
       players: players.map((player) => ({
@@ -147,6 +151,7 @@ export default function Home() {
         staminaLeft: player.stamina,
         lap: 0,
       })),
+      time: 0,
     });
   }, [players]);
 
@@ -161,6 +166,7 @@ export default function Home() {
         staminaLeft: player.stamina,
         lap: 0,
       })),
+      time: 0,
     });
   }, [players]);
 
@@ -316,10 +322,13 @@ export default function Home() {
       const delta = Math.min(0.05, (now - last) / 1000);
       last = now;
 
+      const sim = simRef.current;
       const result = stepSimulation(delta);
+      if (sim) {
+        sim.elapsed += delta;
+      }
       drawScene();
 
-      const sim = simRef.current;
       if (sim && now - sim.lastUiUpdate > 120) {
         setSnapshot({
           players: sim.players.map((runner) => ({
@@ -328,6 +337,7 @@ export default function Home() {
             staminaLeft: runner.staminaLeft,
             lap: Math.min(LAPS, Math.floor(runner.dist / TRACK_LENGTH)),
           })),
+          time: sim.elapsed,
         });
         sim.lastUiUpdate = now;
       }
@@ -442,6 +452,10 @@ export default function Home() {
           <p className="panel-title">Race View</p>
           <div className="canvas-wrap">
             <canvas className="race-canvas" ref={canvasRef} />
+          </div>
+          <div className="status-card">
+            <h4>Time</h4>
+            <p>{snapshot.time.toFixed(2)} s</p>
           </div>
           {winner && (
             <div className="winner">Winner: {winner}</div>
